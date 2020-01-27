@@ -1,0 +1,21 @@
+storage: none
+source https://api.nuget.org/v3/index.json
+
+nuget Microsoft.AspNetCore.App >= 2.2
+nuget Giraffe >= 4
+nuget Giraffe.GoodRead
+nuget Microsoft.NET.Test.Sdk
+nuget Microsoft.AspNetCore.TestHost
+nuget xunit
+nuget xunit.runner.visualstudio
+
+group frontend
+storage: none
+source https://api.nuget.org/v3/index.json
+nuget Fable.Browser.Dom
+nuget Fable.Core
+nuget Fable.Fetch
+nuget Fable.Promise
+nuget FSharp.Core
+nuget Thoth.Fetch
+nuget Thoth.Json

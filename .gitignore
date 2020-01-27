@@ -1,0 +1,9 @@
+**/*/bin
+**/*/obj
+.paket/
+.ionide/
+tmp/
+paket-files/
+**/*/node_modules/
+src/LPEditor/WebRoot/
+
