@@ -8,6 +8,12 @@ open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
+open Giraffe.GoodRead
+open Microsoft.Extensions.Hosting
+open System.Reflection
+open System.Threading.Tasks
+open FSharp.Control.Tasks.V2.ContextInsensitive
+open System.Diagnostics
 
 // ---------------------------------
 // Models
@@ -16,6 +22,12 @@ open Giraffe
 type Message =
     {
         Text : string
+    }
+[<CLIMutable>]
+type Chapter =
+    {
+        Filename: string
+        Content: string
     }
 
 // ---------------------------------
@@ -64,30 +76,42 @@ let indexHandler (name : string) =
     let view      = Views.index model
     htmlView view
 
-let deliverTextFile () = 
-    let webroot = Path.Combine(Directory.GetCurrentDirectory(), "WebRoot")
-    let filename = Path.Combine (webroot, "Claims-based Identity Second Edition device.txt") |> Path.GetFullPath
-    use sr = new StreamReader(filename)
+let deliverTextFile (txtfile:string) = 
+    use sr = new StreamReader(txtfile)
     negotiate { Text= sr.ReadToEnd() }
 
-let webApp =
+let webApp (txtfile:string) =
     choose [
         GET >=>
             choose [
                 route "/" >=> indexHandler "world"
                 routef "/hello/%s" indexHandler
-                route "/editor/content" >=> deliverTextFile()
+                route "/editor/content" >=> deliverTextFile txtfile
                 route "/editor" >=> htmlView Views.editorPage
             ]
         POST >=> 
             choose [
-                route "/editor/content" >=> bindModel None (fun s -> 
-                    printfn "%s" s
-                    Successful.OK "")
+                route "/editor/content" >=> bindModel None (fun (s:string) -> 
+                    use sw = new StreamWriter(txtfile)
+                    sw.Write s
+                    sw.Flush()
+                    Successful.OK "saved")
+                route "/editor/content/chapter" >=> bindModel None (fun (chapter:Chapter) ->
+                    let d = [|Path.GetDirectoryName txtfile; Path.GetFileNameWithoutExtension txtfile|] |> Path.Combine
+                    if Directory.Exists d |> not then
+                        Directory.CreateDirectory d |> ignore
+                    let chapterFile = Path.Combine(d, sprintf "%s.txt" chapter.Filename)
+                    use sw = new StreamWriter(chapterFile)
+                    sw.Write chapter.Content
+                    sw.Flush()
+                    Successful.OK "saved")
             ]
         PUT >=>
             choose [
-                route "/editor/shutdown" >=> Successful.OK ""
+                route "/editor/shutdown" >=> 
+                Require.services(fun (hostApp:IHostApplicationLifetime) ->
+                    hostApp.StopApplication()
+                    Successful.OK "app shut down")
             ]
         setStatusCode 404 >=> text "Not Found" ]
 
@@ -109,15 +133,15 @@ let configureCors (builder : CorsPolicyBuilder) =
            .AllowAnyHeader()
            |> ignore
 
-let configureApp (app : IApplicationBuilder) =
-    let env = app.ApplicationServices.GetService<IHostingEnvironment>()
+let configureApp (txtfile:string) (app : IApplicationBuilder) =
+    let env = app.ApplicationServices.GetService<IHostEnvironment>()
     (match env.IsDevelopment() with
     | true  -> app.UseDeveloperExceptionPage()
     | false -> app.UseGiraffeErrorHandler errorHandler)
         .UseHttpsRedirection()
         .UseCors(configureCors)
         .UseStaticFiles()
-        .UseGiraffe(webApp)
+        .UseGiraffe(webApp txtfile)
 
 let configureServices (services : IServiceCollection) =
     services.AddCors()    |> ignore
@@ -129,17 +153,46 @@ let configureLogging (builder : ILoggingBuilder) =
            .AddDebug() |> ignore
 
 [<EntryPoint>]
-let main _ =
-    let contentRoot = Directory.GetCurrentDirectory()
+let main args =
+    let contentRoot = 
+        match Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") with
+        | "Development" -> Directory.GetCurrentDirectory()
+        | _ -> Assembly.GetExecutingAssembly().Location |> Path.GetDirectoryName
     let webRoot     = Path.Combine(contentRoot, "WebRoot")
-    WebHostBuilder()
-        .UseKestrel()
-        .UseContentRoot(contentRoot)
-        .UseIISIntegration()
-        .UseWebRoot(webRoot)
-        .Configure(Action<IApplicationBuilder> configureApp)
-        .ConfigureServices(configureServices)
-        .ConfigureLogging(configureLogging)
-        .Build()
-        .Run()
+    let txtFileName = 
+        if isNull args || args.Length = 0 || args.[0] |> String.IsNullOrEmpty then
+            None
+        else 
+            Some args.[0]
+        |> Option.bind (fun s ->
+            let fpath = s |> Path.GetFullPath
+            File.Exists fpath |> function
+            | true  -> Some fpath
+            | false -> None)
+    
+    if txtFileName |> Option.isNone then
+        printfn "no text file specified.."
+    else
+        let txtfile = Option.get txtFileName
+        let txtfileCopy = 
+            let fnameShort = Path.GetFileNameWithoutExtension(txtfile)
+            sprintf "%s/%s_%s%s" 
+                (Path.GetDirectoryName txtfile) 
+                fnameShort 
+                (DateTime.Now.ToString("yyyyMMddHHmm"))
+                (Path.GetExtension txtfile)
+            |> Path.GetFullPath
+        File.Copy(txtfile, txtfileCopy, overwrite=true)
+        Process.Start("powershell.exe", "sleep 5; start https://localhost:5001/editor") |> ignore
+        WebHostBuilder()
+            .UseKestrel()
+            .UseContentRoot(contentRoot)
+            .UseIISIntegration()
+            .UseWebRoot(webRoot)
+            .Configure(Action<IApplicationBuilder> (configureApp txtfileCopy))
+            .ConfigureServices(configureServices)
+            .ConfigureLogging(configureLogging)
+            .Build()
+            .Run()
+
     0

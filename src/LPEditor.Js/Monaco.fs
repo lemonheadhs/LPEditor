@@ -319,7 +319,7 @@ module Monaco =
         abstract metaKey: bool
         abstract keyCode: KeyCode
         abstract code: string
-        abstract equals: keybinding: float -> bool
+        abstract equals: keybinding: int -> bool
         abstract preventDefault: unit -> unit
         abstract stopPropagation: unit -> unit
 
@@ -353,16 +353,13 @@ module Monaco =
     /// A position in the editor. This interface is suitable for serialization.
     type [<AllowNullLiteral>] IPosition =
         /// line number (starts at 1)
-        abstract lineNumber: float
+        abstract lineNumber: int
         /// column (the first character in a line is between column 1 and column 2)
-        abstract column: float
+        abstract column: int
 
     /// A position in the editor.
     type [<AllowNullLiteral>] Position =
-        /// line number (starts at 1)
-        abstract lineNumber: float
-        /// column (the first character in a line is between column 1 and column 2)
-        abstract column: float
+        inherit IPosition
         /// Test if this position equals other position
         abstract equals: other: IPosition -> bool
         /// Test if this position is before other position.
@@ -378,7 +375,7 @@ module Monaco =
 
     /// A position in the editor.
     type [<AllowNullLiteral>] PositionStatic =
-        [<Emit "new $0($1...)">] abstract Create: lineNumber: float * column: float -> Position
+        [<Emit "new $0($1...)">] abstract Create: lineNumber: int * column: int -> Position
         /// Test if position `a` equals position `b`
         abstract equals: a: IPosition * b: IPosition -> bool
         /// Test if position `a` is before position `b`.
@@ -397,24 +394,17 @@ module Monaco =
     /// A range in the editor. This interface is suitable for serialization.
     type [<AllowNullLiteral>] IRange =
         /// Line number on which the range starts (starts at 1).
-        abstract startLineNumber: float
+        abstract startLineNumber: int
         /// Column on which the range starts in line `startLineNumber` (starts at 1).
-        abstract startColumn: float
+        abstract startColumn: int
         /// Line number on which the range ends.
-        abstract endLineNumber: float
+        abstract endLineNumber: int
         /// Column on which the range ends in line `endLineNumber`.
-        abstract endColumn: float
+        abstract endColumn: int
 
     /// A range in the editor. (startLineNumber,startColumn) is <= (endLineNumber,endColumn)
     type [<AllowNullLiteral>] Range =
-        /// Line number on which the range starts (starts at 1).
-        abstract startLineNumber: float
-        /// Column on which the range starts in line `startLineNumber` (starts at 1).
-        abstract startColumn: float
-        /// Line number on which the range ends.
-        abstract endLineNumber: float
-        /// Column on which the range ends in line `endLineNumber`.
-        abstract endColumn: float
+        inherit IRange
         /// Test if this range is empty.
         abstract isEmpty: unit -> bool
         /// Test if position is in this range. If the position is at the edges, will return true.
@@ -437,15 +427,15 @@ module Monaco =
         /// Transform to a user presentable string representation.
         abstract toString: unit -> string
         /// Create a new range using this range's start position, and using endLineNumber and endColumn as the end position.
-        abstract setEndPosition: endLineNumber: float * endColumn: float -> Range
+        abstract setEndPosition: endLineNumber: int * endColumn: int -> Range
         /// Create a new range using this range's end position, and using startLineNumber and startColumn as the start position.
-        abstract setStartPosition: startLineNumber: float * startColumn: float -> Range
+        abstract setStartPosition: startLineNumber: int * startColumn: int -> Range
         /// Create a new empty range using this range's start position.
         abstract collapseToStart: unit -> Range
 
     /// A range in the editor. (startLineNumber,startColumn) is <= (endLineNumber,endColumn)
     type [<AllowNullLiteral>] RangeStatic =
-        [<Emit "new $0($1...)">] abstract Create: startLineNumber: float * startColumn: float * endLineNumber: float * endColumn: float -> Range
+        [<Emit "new $0($1...)">] abstract Create: startLineNumber: int * startColumn: int * endLineNumber: int * endColumn: int -> Range
         /// Test if `range` is empty.
         abstract isEmpty: range: IRange -> bool
         /// Test if `position` is in `range`. If the position is at the edges, will return true.
@@ -481,26 +471,18 @@ module Monaco =
     /// The selection is a range that has an orientation.
     type [<AllowNullLiteral>] ISelection =
         /// The line number on which the selection has started.
-        abstract selectionStartLineNumber: float
+        abstract selectionStartLineNumber: int
         /// The column on `selectionStartLineNumber` where the selection has started.
-        abstract selectionStartColumn: float
+        abstract selectionStartColumn: int
         /// The line number on which the selection has ended.
-        abstract positionLineNumber: float
+        abstract positionLineNumber: int
         /// The column on `positionLineNumber` where the selection has ended.
-        abstract positionColumn: float
+        abstract positionColumn: int
 
     /// A selection in the editor.
     /// The selection is a range that has an orientation.
     type [<AllowNullLiteral>] Selection =
-        inherit Range
-        /// The line number on which the selection has started.
-        abstract selectionStartLineNumber: float
-        /// The column on `selectionStartLineNumber` where the selection has started.
-        abstract selectionStartColumn: float
-        /// The line number on which the selection has ended.
-        abstract positionLineNumber: float
-        /// The column on `positionLineNumber` where the selection has ended.
-        abstract positionColumn: float
+        inherit Range inherit ISelection
         /// Clone this selection.
         abstract clone: unit -> Selection
         /// Transform to a human-readable representation.
@@ -510,16 +492,16 @@ module Monaco =
         /// Get directions (LTR or RTL).
         abstract getDirection: unit -> SelectionDirection
         /// Create a new selection with a different `positionLineNumber` and `positionColumn`.
-        abstract setEndPosition: endLineNumber: float * endColumn: float -> Selection
+        abstract setEndPosition: endLineNumber: int * endColumn: int -> Selection
         /// Get the position at `positionLineNumber` and `positionColumn`.
         abstract getPosition: unit -> Position
         /// Create a new selection with a different `selectionStartLineNumber` and `selectionStartColumn`.
-        abstract setStartPosition: startLineNumber: float * startColumn: float -> Selection
+        abstract setStartPosition: startLineNumber: int * startColumn: int -> Selection
 
     /// A selection in the editor.
     /// The selection is a range that has an orientation.
     type [<AllowNullLiteral>] SelectionStatic =
-        [<Emit "new $0($1...)">] abstract Create: selectionStartLineNumber: float * selectionStartColumn: float * positionLineNumber: float * positionColumn: float -> Selection
+        [<Emit "new $0($1...)">] abstract Create: selectionStartLineNumber: int * selectionStartColumn: int * positionLineNumber: int * positionColumn: int -> Selection
         /// Test if the two selections are equal.
         abstract selectionsEqual: a: ISelection * b: ISelection -> bool
         /// Create a `Selection` from one or two positions
@@ -531,7 +513,7 @@ module Monaco =
         /// Test if `obj` is an `ISelection`.
         abstract isISelection: obj: obj option -> bool
         /// Create with a direction.
-        abstract createWithDirection: startLineNumber: float * startColumn: float * endLineNumber: float * endColumn: float * direction: SelectionDirection -> Selection
+        abstract createWithDirection: startLineNumber: int * startColumn: int * endLineNumber: int * endColumn: int * direction: SelectionDirection -> Selection
 
     type [<RequireQualifiedAccess>] SelectionDirection =
         | LTR = 0
@@ -539,13 +521,13 @@ module Monaco =
 
     type [<AllowNullLiteral>] Token =
         // abstract _tokenBrand: unit with get, set
-        abstract offset: float
+        abstract offset: int
         abstract ``type``: string
         abstract language: string
         abstract toString: unit -> string
 
     type [<AllowNullLiteral>] TokenStatic =
-        [<Emit "new $0($1...)">] abstract Create: offset: float * ``type``: string * language: string -> Token
+        [<Emit "new $0($1...)">] abstract Create: offset: int * ``type``: string * language: string -> Token
 
     module Editor =
 
@@ -589,7 +571,7 @@ module Monaco =
             /// Colorize `text` using language `languageId`.
             abstract colorize: text: string * languageId: string * options: IColorizerOptions -> Promise<string>
             /// Colorize a line in a model.
-            abstract colorizeModelLine: model: IModel * lineNumber: float * ?tabSize: float -> string
+            abstract colorizeModelLine: model: IModel * lineNumber: int * ?tabSize: float -> string
             /// Tokenize `text` using language `languageId`
             abstract tokenize: text: string * languageId: string -> ResizeArray<ResizeArray<Token>>
             /// Define a new theme.
@@ -698,7 +680,7 @@ module Monaco =
 
         type [<AllowNullLiteral>] IStandaloneDiffEditor =
             inherit IDiffEditor
-            abstract addCommand: keybinding: float * handler: ICommandHandler * context: string -> string
+            abstract addCommand: keybinding: int * handler: ICommandHandler * context: string -> string
             abstract createContextKey: key: string * defaultValue: 'T -> IContextKey<'T>
             abstract addAction: descriptor: IActionDescriptor -> IDisposable
             /// Get the `original` editor.
@@ -724,10 +706,10 @@ module Monaco =
             abstract code: string option with get, set
             abstract message: string with get, set
             abstract source: string option with get, set
-            abstract startLineNumber: float with get, set
-            abstract startColumn: float with get, set
-            abstract endLineNumber: float with get, set
-            abstract endColumn: float with get, set
+            abstract startLineNumber: int with get, set
+            abstract startColumn: int with get, set
+            abstract endLineNumber: int with get, set
+            abstract endColumn: int with get, set
 
         /// A structure defining a problem/warning/etc.
         type [<AllowNullLiteral>] IMarkerData =
@@ -735,10 +717,10 @@ module Monaco =
             abstract severity: Severity with get, set
             abstract message: string with get, set
             abstract source: string option with get, set
-            abstract startLineNumber: float with get, set
-            abstract startColumn: float with get, set
-            abstract endLineNumber: float with get, set
-            abstract endColumn: float with get, set
+            abstract startLineNumber: int with get, set
+            abstract startColumn: int with get, set
+            abstract endLineNumber: int with get, set
+            abstract endColumn: int with get, set
 
         type [<AllowNullLiteral>] IColorizerOptions =
             abstract tabSize: float option with get, set
@@ -831,9 +813,9 @@ module Monaco =
             /// The word.
             abstract word: string
             /// The column where the word starts.
-            abstract startColumn: float
+            abstract startColumn: int
             /// The column where the word ends.
-            abstract endColumn: float
+            abstract endColumn: int
 
         type [<RequireQualifiedAccess>] EndOfLinePreference =
             | TextDefined = 0
@@ -964,11 +946,11 @@ module Monaco =
             abstract getValueInRange: range: IRange * ?eol: EndOfLinePreference -> string
             /// <summary>Get the length of text in a certain range.</summary>
             /// <param name="range">The range describing what text length to get.</param>
-            abstract getValueLengthInRange: range: IRange -> float
+            abstract getValueLengthInRange: range: IRange -> int
             /// Get the number of lines in the model.
-            abstract getLineCount: unit -> float
+            abstract getLineCount: unit -> int
             /// Get the text for a certain line.
-            abstract getLineContent: lineNumber: float -> string
+            abstract getLineContent: lineNumber: int -> string
             /// Get the text for all lines.
             abstract getLinesContent: unit -> ResizeArray<string>
             /// Get the end of line sequence predominantly used in the text buffer.
@@ -976,15 +958,15 @@ module Monaco =
             /// Change the end of line sequence used in the text buffer.
             abstract setEOL: eol: EndOfLineSequence -> unit
             /// Get the minimum legal column for line at `lineNumber`
-            abstract getLineMinColumn: lineNumber: float -> float
+            abstract getLineMinColumn: lineNumber: int -> int
             /// Get the maximum legal column for line at `lineNumber`
-            abstract getLineMaxColumn: lineNumber: float -> float
+            abstract getLineMaxColumn: lineNumber: int -> int
             /// Returns the column before the first non whitespace character for line at `lineNumber`.
             /// Returns 0 if line is empty or contains only whitespace.
-            abstract getLineFirstNonWhitespaceColumn: lineNumber: float -> float
+            abstract getLineFirstNonWhitespaceColumn: lineNumber: int -> int
             /// Returns the column after the last non whitespace character for line at `lineNumber`.
             /// Returns 0 if line is empty or contains only whitespace.
-            abstract getLineLastNonWhitespaceColumn: lineNumber: float -> float
+            abstract getLineLastNonWhitespaceColumn: lineNumber: int -> int
             /// Create a valid position,
             abstract validatePosition: position: IPosition -> Position
             /// Advances the given position by the given offest (negative offsets are also accepted)
@@ -995,17 +977,17 @@ module Monaco =
             /// 
             /// If the ofsset is such that the new position would be in the middle of a multi-byte
             /// line terminator, throws an exception.
-            abstract modifyPosition: position: IPosition * offset: float -> Position
+            abstract modifyPosition: position: IPosition * offset: int -> Position
             /// Create a valid range.
             abstract validateRange: range: IRange -> Range
             /// <summary>Converts the position to a zero-based offset.
             /// 
             /// The position will be [adjusted](#TextDocument.validatePosition).</summary>
             /// <param name="position">A position.</param>
-            abstract getOffsetAt: position: IPosition -> float
+            abstract getOffsetAt: position: IPosition -> int
             /// <summary>Converts a zero-based offset to a position.</summary>
             /// <param name="offset">A zero-based offset.</param>
-            abstract getPositionAt: offset: float -> Position
+            abstract getPositionAt: offset: int -> Position
             /// Get a range covering the entire model
             abstract getFullModelRange: unit -> Range
             /// Returns iff the model was disposed or not.
@@ -1018,7 +1000,7 @@ module Monaco =
             /// <param name="wordSeparators">Force the matching to match entire words only. Pass null otherwise.</param>
             /// <param name="captureMatches">The result will contain the captured groups.</param>
             /// <param name="limitResultCount">Limit the number of results</param>
-            abstract findMatches: searchString: string * searchOnlyEditableRange: bool * isRegex: bool * matchCase: bool * wordSeparators: string * captureMatches: bool * ?limitResultCount: float -> ResizeArray<FindMatch>
+            abstract findMatches: searchString: string * searchOnlyEditableRange: bool * isRegex: bool * matchCase: bool * wordSeparators: string * captureMatches: bool * ?limitResultCount: int -> ResizeArray<FindMatch>
             /// <summary>Search the model.</summary>
             /// <param name="searchString">The string used to search. If it is a regular expression, set `isRegex` to true.</param>
             /// <param name="searchScope">Limit the searching to only search inside this range.</param>
@@ -1027,7 +1009,7 @@ module Monaco =
             /// <param name="wordSeparators">Force the matching to match entire words only. Pass null otherwise.</param>
             /// <param name="captureMatches">The result will contain the captured groups.</param>
             /// <param name="limitResultCount">Limit the number of results</param>
-            abstract findMatches: searchString: string * searchScope: IRange * isRegex: bool * matchCase: bool * wordSeparators: string * captureMatches: bool * ?limitResultCount: float -> ResizeArray<FindMatch>
+            abstract findMatches: searchString: string * searchScope: IRange * isRegex: bool * matchCase: bool * wordSeparators: string * captureMatches: bool * ?limitResultCount: int -> ResizeArray<FindMatch>
             /// <summary>Search the model for the next match. Loops to the beginning of the model if needed.</summary>
             /// <param name="searchString">The string used to search. If it is a regular expression, set `isRegex` to true.</param>
             /// <param name="searchStart">Start the searching at the specified position.</param>
@@ -1107,13 +1089,13 @@ module Monaco =
             /// <param name="lineNumber">The line number</param>
             /// <param name="ownerId">If set, it will ignore decorations belonging to other owners.</param>
             /// <param name="filterOutValidation">If set, it will ignore decorations specific to validation (i.e. warnings, errors).</param>
-            abstract getLineDecorations: lineNumber: float * ?ownerId: float * ?filterOutValidation: bool -> ResizeArray<IModelDecoration>
+            abstract getLineDecorations: lineNumber: int * ?ownerId: float * ?filterOutValidation: bool -> ResizeArray<IModelDecoration>
             /// <summary>Gets all the decorations for the lines between `startLineNumber` and `endLineNumber` as an array.</summary>
             /// <param name="startLineNumber">The start line number</param>
             /// <param name="endLineNumber">The end line number</param>
             /// <param name="ownerId">If set, it will ignore decorations belonging to other owners.</param>
             /// <param name="filterOutValidation">If set, it will ignore decorations specific to validation (i.e. warnings, errors).</param>
-            abstract getLinesDecorations: startLineNumber: float * endLineNumber: float * ?ownerId: float * ?filterOutValidation: bool -> ResizeArray<IModelDecoration>
+            abstract getLinesDecorations: startLineNumber: int * endLineNumber: int * ?ownerId: float * ?filterOutValidation: bool -> ResizeArray<IModelDecoration>
             /// <summary>Gets all the deocorations in a range as an array. Only `startLineNumber` and `endLineNumber` from `range` are used for filtering.
             /// So for now it returns all the decorations on the same line as `range`.</summary>
             /// <param name="range">The range to search in</param>
@@ -1194,18 +1176,18 @@ module Monaco =
 
         /// A change
         type [<AllowNullLiteral>] IChange =
-            abstract originalStartLineNumber: float
-            abstract originalEndLineNumber: float
-            abstract modifiedStartLineNumber: float
-            abstract modifiedEndLineNumber: float
+            abstract originalStartLineNumber: int
+            abstract originalEndLineNumber: int
+            abstract modifiedStartLineNumber: int
+            abstract modifiedEndLineNumber: int
 
         /// A character level change.
         type [<AllowNullLiteral>] ICharChange =
             inherit IChange
-            abstract originalStartColumn: float
-            abstract originalEndColumn: float
-            abstract modifiedStartColumn: float
-            abstract modifiedEndColumn: float
+            abstract originalStartColumn: int
+            abstract originalEndColumn: int
+            abstract modifiedStartColumn: int
+            abstract modifiedEndColumn: int
 
         /// A line change
         type [<AllowNullLiteral>] ILineChange =
@@ -1214,7 +1196,7 @@ module Monaco =
 
         /// Information about a line in the diff editor
         type [<AllowNullLiteral>] IDiffLineInformation =
-            abstract equivalentLineNumber: float
+            abstract equivalentLineNumber: int
 
         type [<AllowNullLiteral>] INewScrollPosition =
             abstract scrollLeft: float option with get, set
@@ -1311,18 +1293,18 @@ module Monaco =
             /// Restores the view state of the editor from a serializable object generated by `saveViewState`.
             abstract restoreViewState: state: IEditorViewState -> unit
             /// Given a position, returns a column number that takes tab-widths into account.
-            abstract getVisibleColumnFromPosition: position: IPosition -> float
+            abstract getVisibleColumnFromPosition: position: IPosition -> int
             /// Returns the primary position of the cursor.
             abstract getPosition: unit -> Position
             /// <summary>Set the primary position of the cursor. This will remove any secondary cursors.</summary>
             /// <param name="position">New primary cursor's position</param>
             abstract setPosition: position: IPosition -> unit
             /// Scroll vertically as necessary and reveal a line.
-            abstract revealLine: lineNumber: float -> unit
+            abstract revealLine: lineNumber: int -> unit
             /// Scroll vertically as necessary and reveal a line centered vertically.
-            abstract revealLineInCenter: lineNumber: float -> unit
+            abstract revealLineInCenter: lineNumber: int -> unit
             /// Scroll vertically as necessary and reveal a line centered vertically only if it lies outside the viewport.
-            abstract revealLineInCenterIfOutsideViewport: lineNumber: float -> unit
+            abstract revealLineInCenterIfOutsideViewport: lineNumber: int -> unit
             /// Scroll vertically or horizontally as necessary and reveal a position.
             abstract revealPosition: position: IPosition * ?revealVerticalInCenter: bool * ?revealHorizontal: bool -> unit
             /// Scroll vertically or horizontally as necessary and reveal a position centered vertically.
@@ -1349,11 +1331,11 @@ module Monaco =
             /// Cursors will be removed or added, as necessary.
             abstract setSelections: selections: ResizeArray<ISelection> -> unit
             /// Scroll vertically as necessary and reveal lines.
-            abstract revealLines: startLineNumber: float * endLineNumber: float -> unit
+            abstract revealLines: startLineNumber: int * endLineNumber: int -> unit
             /// Scroll vertically as necessary and reveal lines centered vertically.
-            abstract revealLinesInCenter: lineNumber: float * endLineNumber: float -> unit
+            abstract revealLinesInCenter: lineNumber: int * endLineNumber: int -> unit
             /// Scroll vertically as necessary and reveal lines centered vertically only if it lies outside the viewport.
-            abstract revealLinesInCenterIfOutsideViewport: lineNumber: float * endLineNumber: float -> unit
+            abstract revealLinesInCenterIfOutsideViewport: lineNumber: int * endLineNumber: int -> unit
             /// Scroll vertically or horizontally as necessary and reveal a range.
             abstract revealRange: range: IRange -> unit
             /// Scroll vertically or horizontally as necessary and reveal a range centered vertically.
@@ -1463,7 +1445,7 @@ module Monaco =
             /// <param name="source">The source of the call.</param>
             abstract executeCommands: source: string * commands: ResizeArray<ICommand> -> unit
             /// Get all the decorations on a line (filtering out decorations from other editors).
-            abstract getLineDecorations: lineNumber: float -> ResizeArray<IModelDecoration>
+            abstract getLineDecorations: lineNumber: int -> ResizeArray<IModelDecoration>
             /// All decorations added through this call will get the ownerId of this editor.
             abstract deltaDecorations: oldDecorations: ResizeArray<string> * newDecorations: ResizeArray<IModelDeltaDecoration> -> ResizeArray<string>
             /// Get the layout info for the editor.
@@ -1491,10 +1473,10 @@ module Monaco =
             abstract getLineChanges: unit -> ResizeArray<ILineChange>
             /// Get information based on computed diff about a line number from the original model.
             /// If the diff computation is not finished or the model is missing, will return null.
-            abstract getDiffLineInformationForOriginal: lineNumber: float -> IDiffLineInformation
+            abstract getDiffLineInformationForOriginal: lineNumber: int -> IDiffLineInformation
             /// Get information based on computed diff about a line number from the modified model.
             /// If the diff computation is not finished or the model is missing, will return null.
-            abstract getDiffLineInformationForModified: lineNumber: float -> IDiffLineInformation
+            abstract getDiffLineInformationForModified: lineNumber: int -> IDiffLineInformation
             abstract getValue: ?options: ICommonDiffEditorGetValueOptions -> string
 
         type [<AllowNullLiteral>] ICommonDiffEditorGetValueOptions =
@@ -1512,7 +1494,7 @@ module Monaco =
             /// The range that got replaced.
             abstract range: IRange
             /// The length of the range that got replaced.
-            abstract rangeLength: float
+            abstract rangeLength: int
             /// The new text for the range.
             abstract text: string
 
@@ -1584,7 +1566,7 @@ module Monaco =
         type [<AllowNullLiteral>] IEditorScrollbarOptions =
             /// The size of arrows (if displayed).
             /// Defaults to 11.
-            abstract arrowSize: float option with get, set
+            abstract arrowSize: int option with get, set
             /// Render vertical scrollbar.
             /// Accepted values: 'auto', 'visible', 'hidden'.
             /// Defaults to 'auto'.
@@ -1638,7 +1620,7 @@ module Monaco =
             abstract renderCharacters: bool option with get, set
             /// Limit the width of the minimap to render at most a certain number of columns.
             /// Defaults to 120.
-            abstract maxColumn: float option with get, set
+            abstract maxColumn: int option with get, set
 
         /// Configuration options for the editor.
         type [<AllowNullLiteral>] IEditorOptions =
@@ -1658,13 +1640,13 @@ module Monaco =
             /// Otherwise, if it is a truey, line numbers will be rendered normally (equivalent of using an identity function).
             /// Otherwise, line numbers will not be rendered.
             /// Defaults to true.
-            abstract lineNumbers: U2<(float -> string), string> option with get, set
+            abstract lineNumbers: U2<(int -> string), string> option with get, set
             /// Should the corresponding line be selected when clicking on the line number?
             /// Defaults to true.
             abstract selectOnLineNumbers: bool option with get, set
             /// Control the width of line numbers, by reserving horizontal space for rendering at least an amount of digits.
             /// Defaults to 5.
-            abstract lineNumbersMinChars: float option with get, set
+            abstract lineNumbersMinChars: int option with get, set
             /// Enable the rendering of the glyph margin.
             /// Defaults to true in vscode and to false in monaco-editor.
             abstract glyphMargin: bool option with get, set
@@ -1742,7 +1724,7 @@ module Monaco =
             /// When `wordWrap` = "wordWrapColumn", the lines will wrap at `wordWrapColumn`.
             /// When `wordWrap` = "bounded", the lines will wrap at min(viewport width, wordWrapColumn).
             /// Defaults to 80.
-            abstract wordWrapColumn: float option with get, set
+            abstract wordWrapColumn: int option with get, set
             /// Force word wrapping when the text appears to be of a minified/generated file.
             /// Defaults to true.
             abstract wordWrapMinified: bool option with get, set
@@ -1761,7 +1743,7 @@ module Monaco =
             /// Performance guard: Stop rendering a line after x characters.
             /// Defaults to 10000.
             /// Use -1 to never stop rendering
-            abstract stopRenderingLineAfter: float option with get, set
+            abstract stopRenderingLineAfter: int option with get, set
             /// Enable hover.
             /// Defaults to true.
             abstract hover: bool option with get, set
@@ -1935,7 +1917,7 @@ module Monaco =
             abstract enabled: bool
             abstract showSlider: IEditorMinimapOptionsShowSlider
             abstract renderCharacters: bool
-            abstract maxColumn: float
+            abstract maxColumn: int
 
         type [<AllowNullLiteral>] InternalEditorFindOptions =
             abstract seedSearchStringFromSelection: bool
@@ -1946,7 +1928,7 @@ module Monaco =
             abstract isDominatedByLongLines: bool
             abstract isWordWrapMinified: bool
             abstract isViewportWrapping: bool
-            abstract wrappingColumn: float
+            abstract wrappingColumn: int
             abstract wrappingIndent: WrappingIndent
             abstract wordWrapBreakBeforeCharacters: string
             abstract wordWrapBreakAfterCharacters: string
@@ -1958,7 +1940,7 @@ module Monaco =
             abstract rulers: ResizeArray<float>
             abstract ariaLabel: string
             abstract renderLineNumbers: bool
-            abstract renderCustomLineNumbers: (float -> string)
+            abstract renderCustomLineNumbers: (int -> string)
             abstract renderRelativeLineNumbers: bool
             abstract selectOnLineNumbers: bool
             abstract glyphMargin: bool
@@ -1971,7 +1953,7 @@ module Monaco =
             abstract cursorStyle: TextEditorCursorStyle
             abstract hideCursorInOverviewRuler: bool
             abstract scrollBeyondLastLine: bool
-            abstract stopRenderingLineAfter: float
+            abstract stopRenderingLineAfter: int
             abstract renderWhitespace: IEditorOptionsRenderWhitespace
             abstract renderControlCharacters: bool
             abstract fontLigatures: bool
@@ -2057,11 +2039,11 @@ module Monaco =
             /// The height of the glyph margin.
             abstract glyphMarginHeight: float
             /// Left position for the line numbers.
-            abstract lineNumbersLeft: float
+            abstract lineNumbersLeft: int
             /// The width of the line numbers.
-            abstract lineNumbersWidth: float
+            abstract lineNumbersWidth: int
             /// The height of the line numbers.
-            abstract lineNumbersHeight: float
+            abstract lineNumbersHeight: int
             /// Left position for the line decorations.
             abstract decorationsLeft: float
             /// The width of the line decorations.
@@ -2079,7 +2061,7 @@ module Monaco =
             /// Minimap render type
             abstract renderMinimap: RenderMinimap
             /// The number of columns (of typical characters) fitting on a viewport line.
-            abstract viewportColumn: float
+            abstract viewportColumn: int
             /// The width of the vertical scrollbar.
             abstract verticalScrollbarWidth: float
             /// The height of the horizontal scrollbar.
@@ -2114,10 +2096,10 @@ module Monaco =
         type [<AllowNullLiteral>] IViewZone =
             /// The line number after which this zone should appear.
             /// Use 0 to place a view zone before the first line number.
-            abstract afterLineNumber: float with get, set
+            abstract afterLineNumber: int with get, set
             /// The column after which this zone should appear.
             /// If not set, the maxLineColumn of `afterLineNumber` will be used.
-            abstract afterColumn: float option with get, set
+            abstract afterColumn: int option with get, set
             /// Suppress mouse down events.
             /// If set, the editor will attach a mouse down listener to the view zone and .preventDefault on it.
             /// Defaults to false
@@ -2125,7 +2107,7 @@ module Monaco =
             /// The height in lines of the view zone.
             /// If specified, `heightInPx` will be used instead of this.
             /// If neither `heightInPx` nor `heightInLines` is specified, a default of `heightInLines` = 1 will be chosen.
-            abstract heightInLines: float option with get, set
+            abstract heightInLines: int option with get, set
             /// The height in px of the view zone.
             /// If this is set, the editor will give preference to it rather than `heightInLines` above.
             /// If neither `heightInPx` nor `heightInLines` is specified, a default of `heightInLines` = 1 will be chosen.
@@ -2222,7 +2204,7 @@ module Monaco =
             /// The 'approximate' editor position
             abstract position: Position
             /// Desired mouse column (e.g. when position.column gets clamped to text length -- clicking after text on a line).
-            abstract mouseColumn: float
+            abstract mouseColumn: int
             /// The 'approximate' editor range
             abstract range: Range
             /// Some extra detail.
@@ -2277,13 +2259,13 @@ module Monaco =
             /// Get the horizontal position (left offset) for the column w.r.t to the beginning of the line.
             /// This method works only if the line `lineNumber` is currently rendered (in the editor's viewport).
             /// Use this method with caution.
-            abstract getOffsetForColumn: lineNumber: float * column: float -> float
+            abstract getOffsetForColumn: lineNumber: int * column: int -> int
             /// Force an editor render now.
             abstract render: unit -> unit
             /// Get the vertical position (top offset) for the line w.r.t. to the first line.
-            abstract getTopForLineNumber: lineNumber: float -> float
+            abstract getTopForLineNumber: lineNumber: int -> float
             /// Get the vertical position (top offset) for the position w.r.t. to the first line.
-            abstract getTopForPosition: lineNumber: float * column: float -> float
+            abstract getTopForPosition: lineNumber: int * column: int -> float
             /// Get the hit test target at coordinates `clientX` and `clientY`.
             /// The coordinates are relative to the top-left of the viewport.
             abstract getTargetAtClientPoint: clientX: float * clientY: float -> IMouseTarget
@@ -2344,9 +2326,9 @@ module Monaco =
 
         type [<AllowNullLiteral>] IModelTokensChangedEventRanges =
             /// The start of the range (inclusive)
-            abstract fromLineNumber: float
+            abstract fromLineNumber: int
             /// The end of the range (inclusive)
-            abstract toLineNumber: float
+            abstract toLineNumber: int
 
         type [<StringEnum>] [<RequireQualifiedAccess>] IEditorMinimapOptionsShowSlider =
             | Always
@@ -2474,7 +2456,7 @@ module Monaco =
 
         /// A token.
         type [<AllowNullLiteral>] IToken =
-            abstract startIndex: float with get, set
+            abstract startIndex: int with get, set
             abstract scopes: string with get, set
 
         /// The result of a line tokenization.
@@ -2693,7 +2675,7 @@ module Monaco =
             /// Describes text to be appended after the new line and after the indentation.
             abstract appendText: string option with get, set
             /// Describes the number of characters to remove from the new line's indentation.
-            abstract removeText: float option with get, set
+            abstract removeText: int option with get, set
 
         /// The state of the tokenizer between two lines.
         /// It is useful to store flags such as in multiline comment, etc.
@@ -2998,7 +2980,7 @@ module Monaco =
             /// switch to this state
             abstract switchTo: string option with get, set
             /// go back n characters in the stream
-            abstract goBack: float option with get, set
+            abstract goBack: int option with get, set
             abstract bracket: string option with get, set
             /// switch to embedded language (useing the mimetype) or get out using "@pop"
             abstract nextEmbedded: string option with get, set
