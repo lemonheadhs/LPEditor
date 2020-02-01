@@ -1,0 +1,28 @@
+body {
+    display: flex;
+    flex-direction: row;
+}
+
+div#container {
+    flex: 4 4 0;
+    height: calc(100vh - 50px);
+}
+div#side-panel {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+    margin-left: 5px;
+}
+div#side-panel .form-group {
+    margin-bottom: 5px;
+}
+div#side-panel .form-group > label {
+    display: block;
+}
+div#side-panel .form-group input[type=text] {
+    width: 90%;
+}
+div#side-panel .form-group div label {
+    font-weight: 300;
+}

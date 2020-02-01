@@ -5,5 +5,5 @@
 tmp/
 paket-files/
 **/*/node_modules/
-src/LPEditor/WebRoot/
-
+src/LPEditor/WebRoot/*
+!src/LPEditor/WebRoot/editor.css

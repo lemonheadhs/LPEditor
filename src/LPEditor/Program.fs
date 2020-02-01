@@ -59,9 +59,36 @@ module Views =
 
     let editorPage =
         html [] [
-            head [] []
+            head [] [
+                link [_href "/editor.css"; _type "text/css"; _rel "stylesheet"]
+            ]
             body [] [
-                div [_id "container"; _style "width: 80vw;height: calc(100vh - 50px);"] []
+                div [_id "container"] []
+                div [_id "side-panel"] [
+                    form [_id "doc-info"] [
+                        div [_class "form-group"] [
+                            label [_for "topic"] [ encodedText "Topic" ]
+                            input [_id "topic"; _name "topic"; _type "text"]
+                        ]
+                        // div [_class "form-group"] [
+                        //     label [_for "section"] [ encodedText "Section" ]
+                        //     input [_id "section"; _type "text"]
+                        // ]
+                        div [_class "form-group"] [
+                            label [] [ encodedText "Language" ]
+                            div [] [
+                                input [_id "lang_en"; _name "lang"; _type "radio"; _value "en"]
+                                label [_for "lang_en"] [ encodedText "English" ]
+                                input [_id "lang_cn"; _name "lang"; _type "radio"; _value "cn"]
+                                label [_for "lang_cn"] [ encodedText "Chinese" ]
+                            ]
+                        ]
+                        div [_class "form-group"] [
+                            label [_for "order"] [ encodedText "Next Chapter Order" ]
+                            input [_id "order"; _name "order"; _type "number"]
+                        ]
+                    ]
+                ]
                 script [_src "./app.bundle.js"] []
             ]
         ]
