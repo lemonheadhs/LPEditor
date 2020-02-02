@@ -35,5 +35,5 @@ module.exports = {
             use: ['file-loader']
         }],
     },
-    watch: true,
+    watch: false,
 }

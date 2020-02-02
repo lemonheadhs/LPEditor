@@ -4,6 +4,7 @@
 .ionide/
 tmp/
 paket-files/
+publish/
 **/*/node_modules/
 src/LPEditor/WebRoot/*
 !src/LPEditor/WebRoot/editor.css
