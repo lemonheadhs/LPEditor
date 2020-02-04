@@ -6,7 +6,9 @@ open Browser.Dom
 open Monaco.Monaco
 open Monaco.Monaco.Languages
 open Monaco.Monaco.Editor
+open Highlight
 open Commands
+open Fable.Core.JS
 
 module Say =
     let hello name =
@@ -43,7 +45,7 @@ module Say =
             root = [
                 ("\\s{3,}", {| token = "error-token" |})
                 ("\\s{2}", {| token = "warn-token" |})
-                ("-+ Page \\d+-+", {| token = "keyword" |})
+                (MK.pageMark, {| token = "keyword" |})
             ] |> List.toArray
         |}
     
@@ -77,6 +79,16 @@ module Say =
     window.addEventListener("load", fun _ -> 
         registerActions editor
         registerCommands editor
+
+        let form = document.forms.namedItem "doc-info"
+        let prevInfo = 
+            window.localStorage.getItem "lpe-docinfo" 
+            |> (fun s -> isNullOrUndefined s |> function | true -> "{}" | false -> s ) 
+            |> JSON.parse
+        form?topic?value <- prevInfo?topic
+        form?order?value <- prevInfo?order
+        form?lang?value <- prevInfo?language
+
         promise {
             let! msg = Fetch.get("editor/content")
             let line = editor.getPosition()

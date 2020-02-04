@@ -1,6 +1,7 @@
 module Commands
 
 open System
+open FSharp.Core
 open Fable.Core
 open Fable.Core.JsInterop
 open Fable.Core.JS
@@ -10,7 +11,7 @@ open Monaco.Monaco
 open System.Text.RegularExpressions
 open Thoth.Fetch
 open Browser.Dom
-
+open Highlight
 
 let tab fn x = fn x; x
 let always x _ = x
@@ -29,6 +30,8 @@ let edit transformAsync (ed:ICommonCodeEditor) (r: IRange, text: string) =
             |}
         ] |> ResizeArray) |> ignore
     }
+let (^*) (regx: Regex) (rep:string) = fun inputStr ->
+    regx.Replace(inputStr, rep)
 
 [<AutoOpen>]
 module CustomQuickOpen = begin
@@ -96,18 +99,19 @@ let upfrontText (ed:ICommonCodeEditor) =
 let editSelected transformAsync (ed: ICommonCodeEditor) =
     edit transformAsync ed (selectedText ed)
 
-let sequentialWhitespace = Regex("""[\s\r\n\t]+""")
 let sanitizeSelected :(ICommonCodeEditor -> Promise<unit>) =
-    editSelected (fun text ->
-        sequentialWhitespace.Replace(text, " ") |> Promise.resolve)
+    editSelected (
+        (MKReg.pageMark ^* "") >> (MKReg.wordbreak ^* "") >> (MKReg.seqWhtspc ^* " ")
+        >> Promise.resolve)
 let removeWSSelected :(ICommonCodeEditor -> Promise<unit>) =
-    editSelected (fun text ->
-        sequentialWhitespace.Replace(text, "") |> Promise.resolve)
+    editSelected (
+        (MKReg.pageMark ^* "") >> (MKReg.wordbreak ^* "") >> (MKReg.seqWhtspc ^* "") 
+        >> Promise.resolve)
 let gotoNextSuspect (ed:ICommonCodeEditor) =
     let m = ed.getModel()
     let pos = ed.getPosition()
     let matchSuspect =
-        m.findNextMatch("""[\s\r\n\t]{3,}""", pos, 
+        m.findNextMatch(MK._3plusWhtspc + "|" + MK.pageMark, pos, 
             isRegex=true, matchCase=false, 
             wordSeparators=null, captureMatches=false)
     ed.setSelection(matchSuspect.range)
@@ -148,7 +152,7 @@ let insertMeta (ed:ICommonCodeEditor) =
 type EditorActionDef = {
     id: string
     label: string
-    keybindings: int[]
+    keybindings: ResizeArray<int>
     run: ICommonCodeEditor -> Promise<unit>
 }
 
@@ -159,7 +163,7 @@ let actions = [|
         keybindings= [|
             (monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_L
             ,monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_L) |> monaco.KeyMod.chord
-        |]
+        |] |> ResizeArray
         run= sanitizeSelected 
     }
     {
@@ -168,7 +172,7 @@ let actions = [|
         keybindings= [|
             (monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_L
             ,monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_O) |> monaco.KeyMod.chord
-        |]
+        |] |> ResizeArray
         run= removeWSSelected
     }
     {
@@ -177,7 +181,7 @@ let actions = [|
         keybindings= [|
             (monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_L
             ,monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_M) |> monaco.KeyMod.chord
-        |]
+        |] |> ResizeArray
         run= gotoNextSuspect
     }
     {
@@ -186,7 +190,7 @@ let actions = [|
         keybindings= [|
             (monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_L
             ,monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_P) |> monaco.KeyMod.chord
-        |]
+        |] |> ResizeArray
         run= splitSave
     }
     {
@@ -195,14 +199,14 @@ let actions = [|
         keybindings= [|
             (monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_L
             ,monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_E) |> monaco.KeyMod.chord
-        |]
+        |] |> ResizeArray
         run= insertMeta
     }
 |] 
 
 let registerActions (editor: IStandaloneCodeEditor) =
     actions
-    |> Seq.map (merge {|
+    |> Collections.Array.map (merge {|
                         contextMenuGroupId= "lpe"
                         contextMenuOrder= 1500 
                     |} >> (fun o -> o :?> IActionDescriptor))
@@ -220,9 +224,21 @@ let registerCommands (editor: IStandaloneCodeEditor) =
         )
     addLPECommand (monaco.KeyMod.CtrlCmd ||| int KeyCode.KEY_Q)
         (fun () ->
+            let form = document.forms.namedItem "doc-info"
+            let topic:string = form?topic?value
+            let order:int = form?order?value |> string |> Convert.ToInt32
+            let language:string = form?lang?value
+            window.localStorage.setItem 
+                ("lpe-docinfo", JSON.stringify({| order=order; topic=topic; language=language |}))
+            
             Fetch.put("editor/shutdown", null)
                 .``then``(fun _ ->
                     window.alert("server shut down, you can close the window now")) |> ignore
         )
+    let mutable currWordWrap = "off"
+    addLPECommand (monaco.KeyMod.Alt ||| int KeyCode.KEY_Z)
+        (fun () ->
+            currWordWrap <- if currWordWrap = "off" then "on" else "off" 
+            editor.updateOptions(!!{| wordWrap = currWordWrap |}))
 
 

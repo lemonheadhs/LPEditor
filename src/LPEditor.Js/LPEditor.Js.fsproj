@@ -6,6 +6,7 @@
   <ItemGroup>
     <Compile Include="Monaco.fs" />
     <Compile Include="MonacoQuickOpen.fs" />
+    <Compile Include="Highlight.fs" />
     <Compile Include="Commands.fs" />
     <Compile Include="Library.fs" />
   </ItemGroup>

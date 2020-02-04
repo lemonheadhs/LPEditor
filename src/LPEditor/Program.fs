@@ -14,6 +14,7 @@ open System.Reflection
 open System.Threading.Tasks
 open FSharp.Control.Tasks.V2.ContextInsensitive
 open System.Diagnostics
+open System.Text.RegularExpressions
 
 // ---------------------------------
 // Models
@@ -201,22 +202,27 @@ let main args =
         printfn "no text file specified.."
     else
         let txtfile = Option.get txtFileName
-        let txtfileCopy = 
-            let fnameShort = Path.GetFileNameWithoutExtension(txtfile)
-            sprintf "%s/%s_%s%s" 
-                (Path.GetDirectoryName txtfile) 
-                fnameShort 
-                (DateTime.Now.ToString("yyyyMMddHHmm"))
-                (Path.GetExtension txtfile)
-            |> Path.GetFullPath
-        File.Copy(txtfile, txtfileCopy, overwrite=true)
+        let fnameShort = Path.GetFileNameWithoutExtension(txtfile)
+        let txtfile' =
+            if Regex("""_\d{12}$""").IsMatch(fnameShort) then
+                txtfile
+            else
+                let txtfileCopy = 
+                    sprintf "%s/%s_%s%s" 
+                        (Path.GetDirectoryName txtfile) 
+                        fnameShort 
+                        (DateTime.Now.ToString("yyyyMMddHHmm"))
+                        (Path.GetExtension txtfile)
+                    |> Path.GetFullPath
+                File.Copy(txtfile, txtfileCopy, overwrite=true)
+                txtfileCopy
         Process.Start("powershell.exe", "sleep 5; start https://localhost:5001/editor") |> ignore
         WebHostBuilder()
             .UseKestrel()
             .UseContentRoot(contentRoot)
             .UseIISIntegration()
             .UseWebRoot(webRoot)
-            .Configure(Action<IApplicationBuilder> (configureApp txtfileCopy))
+            .Configure(Action<IApplicationBuilder> (configureApp txtfile'))
             .ConfigureServices(configureServices)
             .ConfigureLogging(configureLogging)
             .Build()
